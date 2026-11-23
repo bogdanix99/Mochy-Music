@@ -52,9 +52,9 @@ object LinkWire {
         OkHttpClient.Builder()
             .dispatcher(com.mochyy.mochymusic.utils.AppProxy.dispatcher)
             .connectionPool(com.mochyy.mochymusic.utils.AppProxy.connectionPool)
-            .connectTimeout(4, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .retryOnConnectionFailure(false)
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
             .build()
     }
 

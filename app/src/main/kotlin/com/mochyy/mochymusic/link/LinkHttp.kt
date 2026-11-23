@@ -221,7 +221,7 @@ class LinkHttpServer(
 
     private companion object {
         const val MaxConnections = 6
-        const val ReadTimeoutMs = 15_000
+        const val ReadTimeoutMs = 60_000
         const val MaxBodyBytes = 8 * 1024 * 1024
         const val MaxHeaderLine = 16 * 1024
     }

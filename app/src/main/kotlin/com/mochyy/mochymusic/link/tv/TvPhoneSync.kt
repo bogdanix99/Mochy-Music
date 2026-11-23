@@ -153,7 +153,7 @@ class TvPhoneSync @Inject constructor(
         if (due && (forceSync || now >= retryAt)) {
             if (sync(profile.id, mirror, stream, quiet = !forceSync && !libraryChanged)) lastLibrary = library
             lastRevision = revision
-        } else if (_state.value.phase == PhoneSyncState.Phase.Looking || _state.value.phase == PhoneSyncState.Phase.Away) {
+        } else if (_state.value.phase == PhoneSyncState.Phase.Looking) {
             val settled = if (failedSyncs > 0) PhoneSyncState.Phase.Failed else PhoneSyncState.Phase.Synced
             _state.update { it.copy(phase = settled) }
         }
@@ -244,7 +244,7 @@ class TvPhoneSync @Inject constructor(
         }.onFailure {
             failedSyncs++
             retryAt = System.currentTimeMillis() + (FirstRetryMs shl (failedSyncs - 1).coerceAtMost(MaxRetryDoublings))
-            Timber.tag("Link").w(it, "sync with ${phone.name} failed")
+            Timber.tag("Link").w(it, "sync with ${phone.name} failed: ${it.message}")
             _state.update { state -> state.copy(phase = if (it is IOException) PhoneSyncState.Phase.Away else PhoneSyncState.Phase.Failed) }
         }
         result.isSuccess

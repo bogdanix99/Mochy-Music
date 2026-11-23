@@ -1,8 +1,11 @@
 package com.music.innertube.utils
 
 import com.music.innertube.YouTube
+import com.music.innertube.pages.LibraryContinuationPage
 import com.music.innertube.pages.LibraryPage
+import com.music.innertube.pages.PlaylistContinuationPage
 import com.music.innertube.pages.PlaylistPage
+import kotlinx.coroutines.delay
 import java.security.MessageDigest
 
 // a page that fails, repeats or comes back empty stops here and leaves its token in songsContinuation, so a sync knows the list is short
@@ -13,7 +16,7 @@ suspend fun Result<PlaylistPage>.completed(): Result<PlaylistPage> = runCatching
     var continuation = page.songsContinuation
     val seenContinuations = mutableSetOf<String>()
     var requestCount = 0
-    val maxRequests = 50
+    val maxRequests = 200
 
     while (continuation != null && requestCount < maxRequests) {
         if (continuation in seenContinuations) {
@@ -22,7 +25,18 @@ suspend fun Result<PlaylistPage>.completed(): Result<PlaylistPage> = runCatching
         seenContinuations.add(continuation)
         requestCount++
 
-        val continuationPage = YouTube.playlistContinuation(continuation).getOrNull() ?: break
+        var continuationPage: PlaylistContinuationPage? = null
+        for (attempt in 0..2) {
+            val result = YouTube.playlistContinuation(continuation)
+            if (result.isSuccess) {
+                continuationPage = result.getOrNull()
+                break
+            }
+            if (attempt < 2) {
+                delay(500L * (attempt + 1))
+            }
+        }
+        if (continuationPage == null) break
         // an empty page never carries a next token, and youtube only hands out a token when more songs follow
         if (continuationPage.songs.isEmpty()) break
 
@@ -45,7 +59,7 @@ suspend fun Result<LibraryPage>.completed(): Result<LibraryPage> = runCatching {
     var continuation = page.continuation
     val seenContinuations = mutableSetOf<String>()
     var requestCount = 0
-    val maxRequests = 50
+    val maxRequests = 200
     var consecutiveEmptyResponses = 0
 
     while (continuation != null && requestCount < maxRequests) {
@@ -55,7 +69,18 @@ suspend fun Result<LibraryPage>.completed(): Result<LibraryPage> = runCatching {
         seenContinuations.add(continuation)
         requestCount++
 
-        val continuationPage = YouTube.libraryContinuation(continuation).getOrNull() ?: break
+        var continuationPage: LibraryContinuationPage? = null
+        for (attempt in 0..2) {
+            val result = YouTube.libraryContinuation(continuation)
+            if (result.isSuccess) {
+                continuationPage = result.getOrNull()
+                break
+            }
+            if (attempt < 2) {
+                delay(500L * (attempt + 1))
+            }
+        }
+        if (continuationPage == null) break
 
         if (continuationPage.items.isEmpty()) {
             consecutiveEmptyResponses++

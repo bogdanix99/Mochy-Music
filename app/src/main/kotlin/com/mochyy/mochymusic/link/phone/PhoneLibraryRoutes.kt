@@ -11,6 +11,7 @@ import androidx.media3.datasource.cache.ContentMetadata
 import androidx.media3.exoplayer.offline.Download
 import com.mochyy.mochymusic.db.InternalDatabase
 import com.mochyy.mochymusic.db.MusicDatabase
+import com.mochyy.mochymusic.importer.transfer.foldIntoOneFile
 import com.mochyy.mochymusic.importer.transfer.snapshotDatabase
 import com.mochyy.mochymusic.link.LinkRequest
 import com.mochyy.mochymusic.link.LinkResponse
@@ -38,13 +39,17 @@ internal class PhoneLibraryRoutes(
         // sign-in state and the phone's own searches stay on the phone
         SQLiteDatabase.openDatabase(work.path, null, SQLiteDatabase.OPEN_READWRITE).use { copy ->
             runCatching { copy.execSQL("DELETE FROM search_history") }
+            foldIntoOneFile(copy)
             runCatching { copy.execSQL("VACUUM") }
+            foldIntoOneFile(copy)
         }
+        listOf("-wal", "-shm", "-journal").forEach { File(work.path + it).delete() }
         return LinkResponse.stream(SnapshotType) { out ->
             try {
                 GZIPOutputStream(out, 64 * 1024).use { zip -> work.inputStream().use { it.copyTo(zip, 64 * 1024) } }
             } finally {
                 work.delete()
+                listOf("-wal", "-shm", "-journal").forEach { File(work.path + it).delete() }
             }
         }
     }
